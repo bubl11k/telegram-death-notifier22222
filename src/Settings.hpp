@@ -1,0 +1,90 @@
+#pragma once
+
+#include "Level.hpp"
+#include "RunTracking.hpp"
+#include <limits>
+#include <map>
+#include <string>
+#include <vector>
+
+class PlayLayer;
+
+namespace tg {
+
+// "Post from this many in a row": 2 or more, no upper limit.
+constexpr int kStreakMinFloor = 2;
+constexpr int kStreakMinCeiling = std::numeric_limits<int>::max();
+
+struct RunCfg {
+    bool enabled = true;
+    int minPercent = 0;
+    bool operator==(RunCfg const&) const = default;
+};
+
+struct LevelCfg {
+    bool enabled = false;
+    RunMode mode = RunMode::StartPositions;
+    int minRunProgress = 0;
+    std::map<std::string, RunCfg> runs;
+    bool operator==(LevelCfg const&) const = default;
+};
+
+struct GlobalCfg {
+    std::string token;
+    std::string chat;
+    std::string chat2;
+    std::string deathMessage;
+    std::string runMessage;
+    std::string beatMessage;
+    std::string bestMessage;
+    bool customNickname = false;
+    std::string nickname;
+    bool showDecimals = false;
+    int decimalPlaces = 2;
+    bool onlyBest = false;
+    bool noCaption = false;
+    bool skewShot = false;
+    int skewStrength = 60;
+    int completeDelayMs = 1200;
+    int deathDelayMs = 0;
+    int uploadTimeout = 45;
+    bool streakEnabled = true;
+    int streakMin = 2;
+    int streakMode = 2; // 0 Separate, 1 Replace, 2 Combine
+    std::string streakSameMessage;
+    std::string streakMixedMessage;
+    bool operator==(GlobalCfg const&) const = default;
+};
+
+struct RunEntry {
+    std::string key;
+    std::string label;
+    int percent = 0; // where the start position sits, whole percent
+};
+
+// Every level with posting switched on: level key -> level name, so the
+// Levels tab stays readable after the level is gone. Posting is strictly
+// opt-in: a level that is not in this list never posts.
+using EnabledLevels = std::map<std::string, std::string>;
+
+std::string spKey(float x);
+bool levelEnabled(LevelRef const& level);
+EnabledLevels loadEnabledLevels();
+// An empty name keeps the stored one.
+void setLevelEnabled(std::string const& key, std::string const& name, bool enabled);
+RunCfg loadRunCfg(LevelRef const& level, std::string const& run);
+void saveRunCfg(LevelRef const& level, std::string const& run, RunCfg cfg);
+LevelCfg loadLevelCfg(LevelRef const& level);
+void saveLevelCfg(LevelRef const& level, LevelCfg const& cfg);
+GlobalCfg loadGlobalCfg();
+void saveGlobalCfg(GlobalCfg const& cfg);
+int currentDecimalPlaces();
+// 0 Separate, 1 Replace, 2 Combine (see StreakMode)
+int currentStreakMode();
+// Custom nickname when enabled, otherwise the GD username.
+std::string playerName();
+std::vector<RunEntry> collectRunEntries(PlayLayer* layer);
+std::string formatTemplate(std::string text, std::string const& fallback,
+    std::vector<std::pair<std::string, std::string>> const& variables);
+
+}
